@@ -1,0 +1,38 @@
+<head>
+  <link rel="stylesheet" type="text/css" href="main.css" />
+</head>
+<body>
+  <div class="playground" id="play">Playground</div>
+  <div class="wrapper">
+    <button id="work">Start work</button>
+    <button id="interaction">Handle some user interaction</button>
+  </div>
+  <script>
+    var value = 0;
+    var iterationCount = 10000000;
+    var req = window.requestIdleCallback;
+
+    var workBtn = document.getElementById('work');
+    var interactionBtn = document.getElementById('interaction');
+    var playground = document.getElementById('play');
+
+    var expensiveCalculation = function(deadline) {
+      while (iterationCount > 0 && deadline.timeRemaining() > 1) {
+        value =
+          Math.random() < 0.5 ? value + Math.random() : value + Math.random();
+
+        iterationCount = iterationCount - 1;
+      }
+
+      req(expensiveCalculation);
+    };
+
+    workBtn.addEventListener('click', function(event) {
+      req(expensiveCalculation);
+    });
+
+    interactionBtn.addEventListener('click', function(event) {
+      playground.style.backgroundColor = 'green';
+    });
+  </script>
+</body>

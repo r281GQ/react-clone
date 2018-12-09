@@ -1,0 +1,28 @@
+{
+  "name": "react-clone",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm-run-all --parallel dev:*",
+    "dev:server-compilation": "webpack --config webpack.config.server.js --watch",
+    "dev:server": "nodemon ./build/server.js",
+    "dev:client-compilation": "webpack --config webpack.config.client.js --watch"
+  },
+  "author": "Endre Vegh",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.2.0",
+    "@babel/preset-env": "^7.2.0",
+    "@babel/preset-react": "^7.0.0",
+    "babel-loader": "^8.0.4",
+    "babel-preset-react": "^6.24.1",
+    "nodemon": "^1.18.7",
+    "npm-run-all": "^4.1.5",
+    "webpack": "^4.27.1",
+    "webpack-cli": "^3.1.2"
+  },
+  "dependencies": {
+    "express": "^4.16.4"
+  }
+}

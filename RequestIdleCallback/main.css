@@ -1,0 +1,11 @@
+.playground {
+  background-color: blueviolet;
+  padding: 16px;
+  text-align: center;
+}
+
+.wrapper {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-around;
+}
