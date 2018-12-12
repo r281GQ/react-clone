@@ -21,6 +21,10 @@ module.exports = {
     filename: 'bundle.js'
   },
   /**
+   *  Source should be visible in the browser.
+   */
+  devtool: 'source-map',
+  /**
    *  Set up babel with basic preset and JSX && React transpilation.
    */
   module: {

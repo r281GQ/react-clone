@@ -5,11 +5,10 @@ const app = express();
 /**
  *  Create basic html template.
  */
-const template = `
+const TEMPLATE = `
 <html>
   <body>
     <div id="root"></div>
-    <button>click me</button>
   </body>
   <script src='bundle.js'></script>
 </html>
@@ -21,11 +20,9 @@ const template = `
 app.use(express.static('dist'));
 
 /**
- *  Serve the html on evert route.
+ *  Serve the html on every route.
  */
-app.get('*', (_req, res) => {
-  res.status(200).send(template);
-});
+app.get('*', (_request, response) => response.status(200).send(TEMPLATE));
 
 /**
  *  Start the server at port 3000.
