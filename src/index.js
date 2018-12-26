@@ -1,1 +1,7 @@
-console.log('From source and from client.');
+import React, { render } from "./React";
+
+const App = <div>App</div>;
+
+const root = document.getElementById("root");
+
+render(App, root);
