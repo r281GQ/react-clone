@@ -24,13 +24,41 @@ let subTask = null;
 const getFirstSubTask = () => {
   let task = taskQueue.pop();
 
-  return task;
+  return {
+    props: task.newProps,
+    stateNode: task.dom,
+    tag: "host_root"
+  };
+};
+
+// ReactElement -> Fiber -> [Fiber] (sideEffect)
+const reconcileChildren = (fiber, children) => {
+  let newFiber = {
+    props: children.props,
+    type: children.type,
+    tag: "host_component",
+    stateNode: document.createElement(children.type),
+    parent: fiber
+  };
+};
+
+const beginTask = fiber => {
+  // find out what kind of fiber it is (host ? class ? function ?)
+
+  const children = fiber.props.children;
+
+  reconcileChildren(fiber, children);
 };
 
 /**
  *  executeSubTask :: Fiber -> Fiber
  */
-const executeSubTask = fiber => {};
+const executeSubTask = fiber => {
+  // determine siblings and childs
+  // begin on working on the fiber
+  beginTask(fiber);
+  // make an inventory of what needs to be painted
+};
 
 const workLoop = deadLine => {
   if (!subTask) {
@@ -53,8 +81,11 @@ const performTask = deadLine => {
 /**
  *  render :: (Element, DOMNode) -> Void
  */
-export const render = (element, DOMNode) => {
-  taskQueue.push(null);
+export const render = (element, dom) => {
+  taskQueue.push({
+    dom,
+    newProps: { children: element }
+  });
 
   requestIdleCallback(performTask);
 };
