@@ -25,7 +25,7 @@ const copyPropsOver = (stateNode, props) => propName =>
 const removeProps = stateNode => propName => (stateNode[propName] = null);
 
 export default (stateNode, oldProps, newProps) => {
-  Object.keys(newProps)
+  Object.keys(oldProps)
     .filter(isEventListener)
     .forEach(removeEventListener(stateNode, oldProps));
 
