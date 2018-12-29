@@ -1,10 +1,13 @@
-import { arrify, createQueue, requestIdleCallback } from "./../Misc";
 import {
   ENOUGHT_TIME,
   HOST_COMPONENT,
   HOST_ROOT,
-  PLACEMENT
+  PLACEMENT,
+  UPDATE,
+  DELETION
 } from "./../Constants";
+import { updateDOMElement, createDOMElement } from "./../DOM";
+import { arrify, createQueue, requestIdleCallback } from "./../Misc";
 
 /**
  *  Queue data structure holding the tasks that needs to be processed.
@@ -33,6 +36,7 @@ const getFirstSubTask = () => {
 
   return {
     props: task.newProps,
+    alternate: task.dom.__rootFiberContainer,
     stateNode: task.dom,
     tag: HOST_ROOT,
     effects: []
@@ -42,10 +46,15 @@ const getFirstSubTask = () => {
 /**
  *  createStateNode :: ReactElement -> DOMNode | ReactInstance
  */
-const createStateNode = element =>
-  element.type === "TEXT_ELEMENT"
-    ? document.createTextNode(element.props.nodeValue)
-    : document.createElement(element.type);
+const createStateNode = fiber => {
+  /**
+   *  If the fiber.type is a 'string' it means it is
+   *  a native element
+   */
+  if (typeof fiber.type === "string") {
+    return createDOMElement(fiber);
+  }
+};
 
 /**
  *  reconcileChildren :: (Fiber, Children | [Children]) -> Void
@@ -53,10 +62,83 @@ const createStateNode = element =>
 const reconcileChildren = (fiber, children) => {
   const arrifiedChildren = arrify(children);
 
+  /**
+   *  The corresponding Fiber represenation of the JSX coming from the child
+   *  from the previous cycle.
+   */
+  let alternate;
+
+  if (fiber.alternate && fiber.alternate.child) {
+    alternate = fiber.alternate.child;
+  }
+
+  /**
+   *  If there are no children to render simply return
+   *  without creating a new Fiber
+   */
   if (arrifiedChildren.length === 0) {
+    /**
+     *  If there is an alternate while there is no child
+     *  that means the DOMNode got deleted.
+     */
+    if (alternate) {
+      alternate.effectTag = DELETION;
+      fiber.effects.push(alternate);
+    }
+
     return;
   }
 
+  /**
+   *  If the Fiber was present previuosly but there is
+   *  a type mismatch we need to create a new
+   *  DOMNode and delete the old one.
+   */
+  if (alternate && arrifiedChildren[0].type !== alternate.type) {
+    const newFiber = {
+      alternate,
+      props: arrifiedChildren[0].props,
+      type: arrifiedChildren[0].type,
+      tag: HOST_COMPONENT,
+      stateNode: createStateNode(arrifiedChildren[0]),
+      parent: fiber,
+      effects: [],
+      effectTag: PLACEMENT
+    };
+
+    alternate.effectTag = DELETION;
+
+    fiber.effects.push(alternate);
+
+    fiber.child = newFiber;
+
+    return;
+  }
+
+  /**
+   *  If the Fiber was present previuosly and it is now
+   *  just simply update its props.
+   */
+  if (alternate) {
+    const newFiber = {
+      alternate,
+      props: arrifiedChildren[0].props,
+      type: arrifiedChildren[0].type,
+      tag: HOST_COMPONENT,
+      stateNode: alternate.stateNode,
+      parent: fiber,
+      effects: [],
+      effectTag: UPDATE
+    };
+
+    fiber.child = newFiber;
+
+    return;
+  }
+
+  /**
+   *  Initial render.
+   */
   const newFiber = {
     props: arrifiedChildren[0].props,
     type: arrifiedChildren[0].type,
@@ -71,12 +153,52 @@ const reconcileChildren = (fiber, children) => {
 };
 
 /**
+ *  commitWork :: Fiber -> Void
+ *
+ *  Takes on Fiber with an Effect at time and performs DOM mutation.
+ */
+const commitWork = item => {
+  if (item.effectTag === UPDATE) {
+    updateDOMElement(item.stateNode, item.alternate.props, item.props);
+
+    /**
+     *  If it was an update but there was type mismatch
+     *  stateNode had to be created. Since it is a different instance
+     *  then the previous one it needs to be reattached to he appropriate
+     *  DOMNode.
+     */
+    if (item.parent.stateNode !== item.alternate.parent.stateNode) {
+      item.parent.stateNode.appendChild(item.stateNode);
+    }
+  } else if (item.effectTag === DELETION) {
+    item.parent.stateNode.removeChild(item.stateNode);
+  } else if (item.effectTag === PLACEMENT) {
+    item.parent.stateNode.appendChild(item.stateNode);
+  }
+};
+
+/**
  *  commitAllWork :: Fiber -> Void
  */
 const commitAllWork = fiber => {
-  fiber.effects.forEach(item => {
-    item.parent.stateNode.appendChild(item.stateNode);
-  });
+  /**
+   *  Commit all the painting related work.
+   */
+  fiber.effects.forEach(commitWork);
+
+  /**
+   *  Have a reference to the previously built Fiber tree
+   *  so we can compare it with the new one
+   *  that will be being built in the new cycle.
+   *
+   *  This is saved to the root node which will never be gone.
+   */
+  fiber.stateNode.__rootFiberContainer = fiber;
+
+  /**
+   *  Indicates the the effects been flushed out.
+   */
+  pendingCommit = null;
 };
 
 /**
