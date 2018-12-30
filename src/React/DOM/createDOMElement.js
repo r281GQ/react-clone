@@ -1,11 +1,14 @@
 import updateDOMElement from "./updateDOMElement";
 
-export default fiber => {
-  if (fiber.type === "TEXT_ELEMENT") {
-    return document.createTextNode(fiber.props.nodeValue);
+/**
+ *  createDomElement :: ReactElememt -> DOMNode
+ */
+export default element => {
+  if (element.type === "TEXT_ELEMENT") {
+    return document.createTextNode(element.props.nodeValue);
   }
 
-  const element = document.createElement(fiber.type);
+  const domNode = document.createElement(element.type);
 
-  return updateDOMElement(element, {}, fiber.props);
+  return updateDOMElement(domNode, {}, element.props);
 };
