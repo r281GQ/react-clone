@@ -61,15 +61,24 @@ const createStateNode = fiber => {
 /**
  *  reconcileChildren :: (Fiber, Children | [Children]) -> Void
  *
- *  Fiber are created.
+ *  Fibers are created here.
  */
 const reconcileChildren = (fiber, children) => {
   const arrifiedChildren = arrify(children);
 
+  /**
+   *  Current index of the iteration.
+   */
   let index = 0;
 
+  /**
+   *  Number of children to process.
+   */
   let numberOfElements = arrifiedChildren.length;
 
+  /**
+   *  Current ReactElement of the iteration.
+   */
   let element;
 
   /**
@@ -78,29 +87,41 @@ const reconcileChildren = (fiber, children) => {
    */
   let alternate;
 
+  /**
+   *  If we need to go sideways (there are multiple children in the array)
+   *  we hold the reference of the Fiber created in the previous iteration.
+   */
   let previousFiber;
 
+  /**
+   *  The Fiber made out of the current ReactElement.
+   */
   let newFiber;
 
+  /**
+   *  Assign the initital alternate Fiber if there are any.
+   */
   if (fiber.alternate && fiber.alternate.child) {
     alternate = fiber.alternate.child;
   }
 
   while (index < numberOfElements || alternate) {
     element = arrifiedChildren[index];
+
+    /**
+     *  If there is an alternate while there is no child
+     *  that means the DOMNode got deleted.
+     */
     if (!element && alternate) {
-      /**
-       *  If there is an alternate while there is no child
-       *  that means the DOMNode got deleted.
-       */
       alternate.effectTag = DELETION;
       fiber.effects.push(alternate);
-    } else if (element && alternate && element.type !== alternate.type) {
+
       /**
        *  If the Fiber was present previuosly but there is
        *  a type mismatch we need to create a new
        *  DOMNode and delete the old one.
        */
+    } else if (element && alternate && element.type !== alternate.type) {
       newFiber = {
         alternate,
         props: element.props,
@@ -132,8 +153,6 @@ const reconcileChildren = (fiber, children) => {
         effectTag: UPDATE
       };
 
-      // fiber.child = newFiber;
-
       /**
        *  Initial render.
        */
@@ -149,12 +168,26 @@ const reconcileChildren = (fiber, children) => {
       };
     }
 
+    /**
+     *  In the first iteration it is a direct parent - child
+     *  relationship.
+     */
     if (index === 0) {
       fiber.child = newFiber;
+      /**
+       *  in the upcoming iteration we don't attach the new Fiber to the parent
+       *  as it would overwrite the prev reference.
+       *
+       *  Instead we create a sibling relation using the Fiber generated in the prev iteration.
+       */
     } else if (element) {
       previousFiber.sibling = newFiber;
     }
 
+    /**
+     *  As we go sideways with the current tree
+     *  we do the same with the alternate tree.
+     */
     if (alternate && alternate.sibling) {
       alternate = alternate.sibling;
     } else {
@@ -249,6 +282,10 @@ const executeSubTask = fiber => {
       currentlyExecutedFiber.effects.concat([currentlyExecutedFiber])
     );
 
+    /**
+     *  First we go as deep as we can, gather all the effect as we coming up
+     *  traversing the Fiber tree, than we go sideways.
+     */
     if (currentlyExecutedFiber.sibling) {
       return currentlyExecutedFiber.sibling;
     }
