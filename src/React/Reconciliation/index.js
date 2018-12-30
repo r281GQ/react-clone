@@ -38,6 +38,8 @@ const getFirstSubTask = () => {
     props: task.newProps,
     alternate: task.dom.__rootFiberContainer,
     stateNode: task.dom,
+    child: null,
+    sibling: null,
     tag: HOST_ROOT,
     effects: []
   };
@@ -58,9 +60,17 @@ const createStateNode = fiber => {
 
 /**
  *  reconcileChildren :: (Fiber, Children | [Children]) -> Void
+ *
+ *  Fiber are created.
  */
 const reconcileChildren = (fiber, children) => {
   const arrifiedChildren = arrify(children);
+
+  let index = 0;
+
+  let numberOfElements = arrifiedChildren.length;
+
+  let element;
 
   /**
    *  The corresponding Fiber represenation of the JSX coming from the child
@@ -68,88 +78,93 @@ const reconcileChildren = (fiber, children) => {
    */
   let alternate;
 
+  let previousFiber;
+
+  let newFiber;
+
   if (fiber.alternate && fiber.alternate.child) {
     alternate = fiber.alternate.child;
   }
 
-  /**
-   *  If there are no children to render simply return
-   *  without creating a new Fiber
-   */
-  if (arrifiedChildren.length === 0) {
-    /**
-     *  If there is an alternate while there is no child
-     *  that means the DOMNode got deleted.
-     */
-    if (alternate) {
+  while (index < numberOfElements || alternate) {
+    element = arrifiedChildren[index];
+    if (!element && alternate) {
+      /**
+       *  If there is an alternate while there is no child
+       *  that means the DOMNode got deleted.
+       */
       alternate.effectTag = DELETION;
       fiber.effects.push(alternate);
+    } else if (element && alternate && element.type !== alternate.type) {
+      /**
+       *  If the Fiber was present previuosly but there is
+       *  a type mismatch we need to create a new
+       *  DOMNode and delete the old one.
+       */
+      newFiber = {
+        alternate,
+        props: element.props,
+        type: element.type,
+        tag: HOST_COMPONENT,
+        stateNode: createStateNode(element),
+        parent: fiber,
+        effects: [],
+        effectTag: PLACEMENT
+      };
+
+      alternate.effectTag = DELETION;
+
+      fiber.effects.push(alternate);
+
+      /**
+       *  If the Fiber was present previuosly and it is now
+       *  just simply update its props.
+       */
+    } else if (element && alternate) {
+      newFiber = {
+        alternate,
+        props: element.props,
+        type: element.type,
+        tag: HOST_COMPONENT,
+        stateNode: alternate.stateNode,
+        parent: fiber,
+        effects: [],
+        effectTag: UPDATE
+      };
+
+      // fiber.child = newFiber;
+
+      /**
+       *  Initial render.
+       */
+    } else if (element && !alternate) {
+      newFiber = {
+        props: element.props,
+        type: element.type,
+        tag: HOST_COMPONENT,
+        stateNode: createStateNode(element),
+        parent: fiber,
+        effects: [],
+        effectTag: PLACEMENT
+      };
     }
 
-    return;
+    if (index === 0) {
+      fiber.child = newFiber;
+    } else if (element) {
+      previousFiber.sibling = newFiber;
+    }
+
+    if (alternate && alternate.sibling) {
+      alternate = alternate.sibling;
+    } else {
+      alternate = null;
+    }
+
+    previousFiber = newFiber;
+
+    index++;
   }
-
-  /**
-   *  If the Fiber was present previuosly but there is
-   *  a type mismatch we need to create a new
-   *  DOMNode and delete the old one.
-   */
-  if (alternate && arrifiedChildren[0].type !== alternate.type) {
-    const newFiber = {
-      alternate,
-      props: arrifiedChildren[0].props,
-      type: arrifiedChildren[0].type,
-      tag: HOST_COMPONENT,
-      stateNode: createStateNode(arrifiedChildren[0]),
-      parent: fiber,
-      effects: [],
-      effectTag: PLACEMENT
-    };
-
-    alternate.effectTag = DELETION;
-
-    fiber.effects.push(alternate);
-
-    fiber.child = newFiber;
-
-    return;
-  }
-
-  /**
-   *  If the Fiber was present previuosly and it is now
-   *  just simply update its props.
-   */
-  if (alternate) {
-    const newFiber = {
-      alternate,
-      props: arrifiedChildren[0].props,
-      type: arrifiedChildren[0].type,
-      tag: HOST_COMPONENT,
-      stateNode: alternate.stateNode,
-      parent: fiber,
-      effects: [],
-      effectTag: UPDATE
-    };
-
-    fiber.child = newFiber;
-
-    return;
-  }
-
-  /**
-   *  Initial render.
-   */
-  const newFiber = {
-    props: arrifiedChildren[0].props,
-    type: arrifiedChildren[0].type,
-    tag: HOST_COMPONENT,
-    stateNode: createStateNode(arrifiedChildren[0]),
-    parent: fiber,
-    effects: [],
-    effectTag: PLACEMENT
-  };
-
-  fiber.child = newFiber;
 };
 
 /**
@@ -234,6 +249,10 @@ const executeSubTask = fiber => {
       currentlyExecutedFiber.effects.concat([currentlyExecutedFiber])
     );
 
+    if (currentlyExecutedFiber.sibling) {
+      return currentlyExecutedFiber.sibling;
+    }
+
     currentlyExecutedFiber = currentlyExecutedFiber.parent;
   }
 
@@ -260,8 +279,6 @@ const workLoop = deadLine => {
   while (subTask && deadLine.timeRemaining() > ENOUGHT_TIME) {
     subTask = executeSubTask(subTask);
   }
-
-  // console.log(pendingCommit);
 
   if (pendingCommit) commitAllWork(pendingCommit);
 };
