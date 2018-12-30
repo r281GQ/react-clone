@@ -32,6 +32,19 @@ let subTask = null;
 let pendingCommit = null;
 
 /**
+ *  traverseToRoot :: ReactInstance -> Fiber
+ */
+const traverseToRoot = instance => {
+  let fiber = instance.__fiber;
+
+  while (fiber.parent) {
+    fiber = fiber.parent;
+  }
+
+  return fiber;
+};
+
+/**
  *  getFirstSubTask :: a -> Fiber | Null
  *
  *  Pops the taskQueue and grabs the first Task to work on and returns
@@ -39,6 +52,26 @@ let pendingCommit = null;
  */
 const getFirstSubTask = () => {
   const task = taskQueue.pop();
+
+  if (task.from === CLASS_COMPONENT) {
+    const root = traverseToRoot(task.instance);
+
+    /**
+     *  We can grab the alternate tree later and can have access
+     *  to the partialState.
+     */
+    task.instance.__fiber.partialState = task.partialState;
+
+    return {
+      props: root.props,
+      alternate: root,
+      stateNode: root.stateNode,
+      child: null,
+      sibling: null,
+      tag: HOST_ROOT,
+      effects: []
+    };
+  }
 
   return {
     props: task.newProps,
@@ -52,16 +85,19 @@ const getFirstSubTask = () => {
 };
 
 /**
- *  createStateNode :: ReactElement -> DOMNode | ReactInstance
+ *  createStateNode :: Fiber -> DOMNode | ReactInstance
  */
-const createStateNode = (element, tag) => {
-  if (tag === HOST_COMPONENT) {
-    return createDOMElement(element);
-  } else if (tag === CLASS_COMPONENT) {
-    return createReactInstance(element);
+const createStateNode = fiber => {
+  if (fiber.tag === HOST_COMPONENT) {
+    return createDOMElement(fiber);
+  } else if (fiber.tag === CLASS_COMPONENT) {
+    return createReactInstance(fiber);
   }
 };
 
+/**
+ *  getTag :: ReactElement -> String
+ */
 const getTag = element => {
   return typeof element.type === "string" ? HOST_COMPONENT : CLASS_COMPONENT;
 };
@@ -135,11 +171,12 @@ const reconcileChildren = (fiber, children) => {
         props: element.props,
         type: element.type,
         tag: getTag(element),
-        stateNode: createStateNode(element, getTag(element)),
         parent: fiber,
         effects: [],
         effectTag: PLACEMENT
       };
+
+      newFiber.stateNode = createStateNode(newFiber);
 
       alternate.effectTag = DELETION;
 
@@ -156,6 +193,7 @@ const reconcileChildren = (fiber, children) => {
         type: element.type,
         tag: getTag(element),
         stateNode: alternate.stateNode,
+        partialState: alternate.partialState,
         parent: fiber,
         effects: [],
         effectTag: UPDATE
@@ -169,11 +207,12 @@ const reconcileChildren = (fiber, children) => {
         props: element.props,
         type: element.type,
         tag: getTag(element),
-        stateNode: createStateNode(element, getTag(element)),
         parent: fiber,
         effects: [],
         effectTag: PLACEMENT
       };
+
+      newFiber.stateNode = createStateNode(newFiber);
     }
 
     /**
@@ -214,6 +253,14 @@ const reconcileChildren = (fiber, children) => {
  *  Takes on Fiber with an Effect at time and performs DOM mutation.
  */
 const commitWork = item => {
+  /**
+   *  In reconcileChildren the new Fiber structure gets created every time.
+   *  We need to update the reference accordingly.
+   */
+  if (item.tag === CLASS_COMPONENT) {
+    item.stateNode.__fiber = item;
+  }
+
   if (item.effectTag === UPDATE) {
     updateDOMElement(item.stateNode, item.alternate.props, item.props);
 
@@ -270,6 +317,17 @@ const commitAllWork = fiber => {
  */
 const beginTask = fiber => {
   if (fiber.tag === CLASS_COMPONENT) {
+    if (fiber.partialState) {
+      fiber.stateNode.state = {
+        ...fiber.stateNode.state,
+        ...fiber.partialState
+      };
+    }
+
+    fiber.stateNode.props = fiber.props;
+
+    fiber.partialState = null;
+
     reconcileChildren(fiber, fiber.stateNode.render());
   } else if (fiber.tag === HOST_COMPONENT || fiber.tag === HOST_ROOT) {
     reconcileChildren(fiber, fiber.props.children);
@@ -363,6 +421,16 @@ export const render = (element, dom) => {
   taskQueue.push({
     dom,
     newProps: { children: element }
+  });
+
+  requestIdleCallback(performTask);
+};
+
+export const scheduleUpdate = (instance, partialState) => {
+  taskQueue.push({
+    from: CLASS_COMPONENT,
+    instance,
+    partialState
   });
 
   requestIdleCallback(performTask);

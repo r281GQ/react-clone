@@ -1,11 +1,29 @@
 import React, { Component, render } from "./React";
 
 class Main extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      color: "green"
+    };
+  }
+
   render() {
     return (
-      <section style={{ backgroundColor: this.props.color }}>
+      <div style={{ backgroundColor: this.state.color }}>
         {this.props.text}
-      </section>
+        <button
+          onClick={() =>
+            this.setState({
+              color: this.state.color === "green" ? "purple" : "green"
+            })
+          }
+        >
+          Change color!
+        </button>
+        {this.state.color === "green" ? <div>Great</div> : null}
+      </div>
     );
   }
 }
@@ -19,7 +37,7 @@ const App = (
     <div>Text2</div>
     <div style={{ textDecoration: "line-through" }}>Text3</div>
     <div>Text4</div>
-    <Main text="From a class Component! Hey Ho!" color="purple" />
+    <Main text="From a class Component! Hey Ho!" />
   </div>
 );
 
