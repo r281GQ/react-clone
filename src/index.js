@@ -1,5 +1,11 @@
 import React, { Component, render } from "./React";
 
+class Great extends Component {
+  render() {
+    return <div>Great</div>;
+  }
+}
+
 class Main extends Component {
   constructor(props) {
     super(props);
@@ -22,7 +28,7 @@ class Main extends Component {
         >
           Change color!
         </button>
-        {this.state.color === "green" ? <div>Great</div> : null}
+        {this.state.color === "green" ? <Great /> : null}
       </div>
     );
   }

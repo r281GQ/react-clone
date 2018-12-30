@@ -7,12 +7,14 @@ import {
   DELETION,
   CLASS_COMPONENT
 } from "./../Constants";
-import { updateDOMElement, createDOMElement } from "./../DOM";
+import { updateDOMElement } from "./../DOM";
 import {
   arrify,
-  createReactInstance,
+  createStateNode,
   createQueue,
-  requestIdleCallback
+  getTag,
+  requestIdleCallback,
+  traverseToRoot
 } from "./../Misc";
 
 /**
@@ -30,19 +32,6 @@ let subTask = null;
  *  are ready to be painted to the DOM.
  */
 let pendingCommit = null;
-
-/**
- *  traverseToRoot :: ReactInstance -> Fiber
- */
-const traverseToRoot = instance => {
-  let fiber = instance.__fiber;
-
-  while (fiber.parent) {
-    fiber = fiber.parent;
-  }
-
-  return fiber;
-};
 
 /**
  *  getFirstSubTask :: a -> Fiber | Null
@@ -82,24 +71,6 @@ const getFirstSubTask = () => {
     tag: HOST_ROOT,
     effects: []
   };
-};
-
-/**
- *  createStateNode :: Fiber -> DOMNode | ReactInstance
- */
-const createStateNode = fiber => {
-  if (fiber.tag === HOST_COMPONENT) {
-    return createDOMElement(fiber);
-  } else if (fiber.tag === CLASS_COMPONENT) {
-    return createReactInstance(fiber);
-  }
-};
-
-/**
- *  getTag :: ReactElement -> String
- */
-const getTag = element => {
-  return typeof element.type === "string" ? HOST_COMPONENT : CLASS_COMPONENT;
 };
 
 /**
@@ -274,7 +245,15 @@ const commitWork = item => {
       item.parent.stateNode.appendChild(item.stateNode);
     }
   } else if (item.effectTag === DELETION) {
-    item.parent.stateNode.removeChild(item.stateNode);
+    let fiber = item;
+    let parentFiber = item.parent;
+
+    while (fiber.tag === CLASS_COMPONENT) {
+      fiber = fiber.child;
+    }
+
+    if (parentFiber.tag === HOST_COMPONENT)
+      parentFiber.stateNode.removeChild(fiber.stateNode);
   } else if (item.effectTag === PLACEMENT) {
     let fiber = item;
     let parentFiber = item.parent;
