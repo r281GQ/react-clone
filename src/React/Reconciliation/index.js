@@ -4,10 +4,16 @@ import {
   HOST_ROOT,
   PLACEMENT,
   UPDATE,
-  DELETION
+  DELETION,
+  CLASS_COMPONENT
 } from "./../Constants";
 import { updateDOMElement, createDOMElement } from "./../DOM";
-import { arrify, createQueue, requestIdleCallback } from "./../Misc";
+import {
+  arrify,
+  createReactInstance,
+  createQueue,
+  requestIdleCallback
+} from "./../Misc";
 
 /**
  *  Queue data structure holding the tasks that needs to be processed.
@@ -48,14 +54,16 @@ const getFirstSubTask = () => {
 /**
  *  createStateNode :: ReactElement -> DOMNode | ReactInstance
  */
-const createStateNode = fiber => {
-  /**
-   *  If the fiber.type is a 'string' it means it is
-   *  a native element
-   */
-  if (typeof fiber.type === "string") {
-    return createDOMElement(fiber);
+const createStateNode = (element, tag) => {
+  if (tag === HOST_COMPONENT) {
+    return createDOMElement(element);
+  } else if (tag === CLASS_COMPONENT) {
+    return createReactInstance(element);
   }
+};
+
+const getTag = element => {
+  return typeof element.type === "string" ? HOST_COMPONENT : CLASS_COMPONENT;
 };
 
 /**
@@ -126,8 +134,8 @@ const reconcileChildren = (fiber, children) => {
         alternate,
         props: element.props,
         type: element.type,
-        tag: HOST_COMPONENT,
-        stateNode: createStateNode(element),
+        tag: getTag(element),
+        stateNode: createStateNode(element, getTag(element)),
         parent: fiber,
         effects: [],
         effectTag: PLACEMENT
@@ -146,7 +154,7 @@ const reconcileChildren = (fiber, children) => {
         alternate,
         props: element.props,
         type: element.type,
-        tag: HOST_COMPONENT,
+        tag: getTag(element),
         stateNode: alternate.stateNode,
         parent: fiber,
         effects: [],
@@ -160,8 +168,8 @@ const reconcileChildren = (fiber, children) => {
       newFiber = {
         props: element.props,
         type: element.type,
-        tag: HOST_COMPONENT,
-        stateNode: createStateNode(element),
+        tag: getTag(element),
+        stateNode: createStateNode(element, getTag(element)),
         parent: fiber,
         effects: [],
         effectTag: PLACEMENT
@@ -221,7 +229,15 @@ const commitWork = item => {
   } else if (item.effectTag === DELETION) {
     item.parent.stateNode.removeChild(item.stateNode);
   } else if (item.effectTag === PLACEMENT) {
-    item.parent.stateNode.appendChild(item.stateNode);
+    let fiber = item;
+    let parentFiber = item.parent;
+
+    while (parentFiber.tag === CLASS_COMPONENT) {
+      parentFiber = parentFiber.parent;
+    }
+
+    if (fiber.tag === HOST_COMPONENT)
+      parentFiber.stateNode.appendChild(fiber.stateNode);
   }
 };
 
@@ -253,7 +269,11 @@ const commitAllWork = fiber => {
  *  beginTask :: Fiber -> Void
  */
 const beginTask = fiber => {
-  reconcileChildren(fiber, fiber.props.children);
+  if (fiber.tag === CLASS_COMPONENT) {
+    reconcileChildren(fiber, fiber.stateNode.render());
+  } else if (fiber.tag === HOST_COMPONENT || fiber.tag === HOST_ROOT) {
+    reconcileChildren(fiber, fiber.props.children);
+  }
 };
 
 /**
