@@ -310,6 +310,36 @@ const commitAllWork = fiber => {
    */
   pendingCommit = null;
 
+  const assignRefs = fiber.effects.filter(
+    effect =>
+      effect.props.ref &&
+      effect.tag !== FUNCTIONAL_COMPONENT &&
+      (effect.effectTag === PLACEMENT || effect.effectTag === UPDATE)
+  );
+
+  const removeRefs = fiber.effects.filter(
+    effect =>
+      effect.props.ref &&
+      effect.tag !== FUNCTIONAL_COMPONENT &&
+      effect.effectTag === DELETION
+  );
+
+  assignRefs.forEach(effect => {
+    if (typeof effect.props.ref === "function") {
+      effect.props.ref(effect.stateNode);
+    } else {
+      effect.props.ref.current = effect.stateNode;
+    }
+  });
+
+  removeRefs.forEach(effect => {
+    if (typeof effect.props.ref === "function") {
+      effect.props.ref(null);
+    } else {
+      effect.props.ref.current = null;
+    }
+  });
+
   const mountEffects = fiber.effects.filter(effect => {
     return effect.effectTag === PLACEMENT && effect.tag === CLASS_COMPONENT;
   });

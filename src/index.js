@@ -1,4 +1,5 @@
-import React, { Component, render } from "./React";
+import React, { createRef, Component } from "./React";
+import { render } from "./ReactDOM";
 
 class Todos extends Component {
   render() {
@@ -100,7 +101,10 @@ class Todo extends Component {
   constructor(props) {
     super(props);
 
+    this.ref = createRef();
+
     this.state = {
+      ref: undefined,
       visible: true,
       todos: [
         {
@@ -149,7 +153,7 @@ class Todo extends Component {
 
   render() {
     return (
-      <div>
+      <div ref={this.ref}>
         <button onClick={() => this.setState({ visible: false })}>
           Unmount
         </button>
