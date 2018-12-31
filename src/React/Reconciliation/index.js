@@ -304,18 +304,32 @@ const commitAllWork = fiber => {
  */
 const beginTask = fiber => {
   if (fiber.tag === CLASS_COMPONENT) {
-    if (fiber.partialState) {
-      fiber.stateNode.state = {
-        ...fiber.stateNode.state,
-        ...fiber.partialState
-      };
-    }
-
-    fiber.stateNode.props = fiber.props;
+    let nextState = fiber.partialState
+      ? {
+          ...fiber.stateNode.state,
+          ...fiber.partialState
+        }
+      : fiber.stateNode.state;
 
     fiber.partialState = null;
 
-    reconcileChildren(fiber, fiber.stateNode.render());
+    const derivedState = fiber.type.getDerivedStateFromProps(
+      fiber.props,
+      nextState
+    );
+
+    nextState = { ...nextState, ...derivedState };
+
+    const shouldRender =
+      fiber.effectTag === PLACEMENT
+        ? true
+        : fiber.stateNode.shouldComponentUpdate(fiber.props, nextState);
+
+    fiber.stateNode.props = fiber.props;
+
+    fiber.stateNode.state = nextState;
+
+    if (shouldRender) reconcileChildren(fiber, fiber.stateNode.render());
   } else if (fiber.tag === FUNCTIONAL_COMPONENT) {
     reconcileChildren(fiber, fiber.stateNode(fiber.props));
   } else if (fiber.tag === HOST_COMPONENT || fiber.tag === HOST_ROOT) {

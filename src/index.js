@@ -1,24 +1,50 @@
 import React, { Component, render } from "./React";
 
-const Todos = props => (
-  <div>
-    {props.todos.map(todo => (
-      <div
-        key={todo.id}
-        style={{ display: "flex", justifyContent: "space-around" }}
-      >
-        <div
-          style={{ textDecoration: todo.completed ? "line-through" : "none" }}
-        >
-          {todo.name}
-        </div>
-        <button onClick={() => props.toggle(todo)}>
-          {todo.completed ? `Mark it undone` : `Mark it complete`}
-        </button>
+class Todos extends Component {
+  render() {
+    return (
+      <div>
+        {this.props.todos.map(todo => (
+          <div
+            key={todo.id}
+            style={{ display: "flex", justifyContent: "space-around" }}
+          >
+            <div
+              style={{
+                textDecoration: todo.completed ? "line-through" : "none"
+              }}
+            >
+              {todo.name}
+            </div>
+            <button onClick={() => this.props.toggle(todo)}>
+              {todo.completed ? `Mark it undone` : `Mark it complete`}
+            </button>
+          </div>
+        ))}
       </div>
-    ))}
-  </div>
-);
+    );
+  }
+}
+
+// const Todos = props => (
+//   <div>
+//     {props.todos.map(todo => (
+//       <div
+//         key={todo.id}
+//         style={{ display: "flex", justifyContent: "space-around" }}
+//       >
+//         <div
+//           style={{ textDecoration: todo.completed ? "line-through" : "none" }}
+//         >
+//           {todo.name}
+//         </div>
+//         <button onClick={() => props.toggle(todo)}>
+//           {todo.completed ? `Mark it undone` : `Mark it complete`}
+//         </button>
+//       </div>
+//     ))}
+//   </div>
+// );
 
 class CreateTodo extends Component {
   constructor(props) {
@@ -50,7 +76,7 @@ class CreateTodo extends Component {
               });
             }}
           >
-            Create todo
+            {`Create todo`}
           </button>
         </div>
       </div>
@@ -100,6 +126,14 @@ class Todo extends Component {
     this.setState({ todos: [...this.state.todos, todo] });
   }
 
+  static getDerivedStateFromProps(props, state) {
+    if (props.nullify) {
+      return { todos: [] };
+    }
+
+    return { ...state };
+  }
+
   render() {
     return (
       <div>
@@ -112,4 +146,4 @@ class Todo extends Component {
 
 const root = document.getElementById("root");
 
-render(<Todo />, root);
+render(<Todo nullify={false} />, root);

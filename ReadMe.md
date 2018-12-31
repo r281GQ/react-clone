@@ -1,6 +1,5 @@
-## Todos
+## Fiber inspired simplified React-clone
 
-- optimize performance by not reaching top
-- refactor demo app
+### Todos
+
 - mock some basic React event handling
-- refactor `createElement`
