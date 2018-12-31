@@ -10,6 +10,10 @@ export class Component {
     return true;
   }
 
+  componentDidMount() {}
+
+  componentDidUpdate() {}
+
   setState(partialState) {
     scheduleUpdate(this, partialState);
   }

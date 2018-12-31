@@ -168,7 +168,10 @@ const reconcileChildren = (fiber, children) => {
         partialState: alternate.partialState,
         parent: fiber,
         effects: [],
-        effectTag: UPDATE
+        effectTag: UPDATE,
+        snapshotEffect: alternate.stateNode.getSnapshotBeforeUpdate
+          ? true
+          : undefined
       };
 
       /**
@@ -279,10 +282,39 @@ const commitWork = item => {
  *  commitAllWork :: Fiber -> Void
  */
 const commitAllWork = fiber => {
+  const withSnapshot = fiber.effects.filter(effect => effect.snapshotEffect);
+
+  withSnapshot.forEach(effect => {
+    effect.snapshotEffect = effect.stateNode.getSnapshotBeforeUpdate(
+      effect.prevProps,
+      effect.prevState
+    );
+  });
+
   /**
    *  Commit all the painting related work.
    */
   fiber.effects.forEach(commitWork);
+
+  const mountEffects = fiber.effects.filter(effect => {
+    return effect.effectTag === PLACEMENT && effect.tag === CLASS_COMPONENT;
+  });
+
+  mountEffects.forEach(effect => {
+    effect.stateNode.componentDidMount();
+  });
+
+  const updateEffects = fiber.effects.filter(effect => {
+    return effect.effectTag === UPDATE && effect.tag === CLASS_COMPONENT;
+  });
+
+  updateEffects.forEach(effect => {
+    effect.stateNode.componentDidUpdate(
+      effect.prevProps,
+      effect.prevState,
+      effect.snapshotEffect
+    );
+  });
 
   /**
    *  Have a reference to the previously built Fiber tree
@@ -392,12 +424,23 @@ const beginTask = fiber => {
         ? true
         : fiber.stateNode.shouldComponentUpdate(fiber.props, nextState);
 
+    if (fiber.effectTag === UPDATE) {
+      fiber.prevState = fiber.stateNode.state;
+      fiber.prevProps = fiber.stateNode.props;
+    }
+
     fiber.stateNode.props = fiber.props;
 
     fiber.stateNode.state = nextState;
 
-    if (shouldRender) reconcileChildren(fiber, fiber.stateNode.render());
-    else copyChildren(fiber);
+    if (fiber.snapshotEffect) {
+    }
+
+    if (shouldRender) {
+      reconcileChildren(fiber, fiber.stateNode.render());
+    } else {
+      copyChildren(fiber);
+    }
   } else if (fiber.tag === FUNCTIONAL_COMPONENT) {
     reconcileChildren(fiber, fiber.stateNode(fiber.props));
   } else if (fiber.tag === HOST_COMPONENT || fiber.tag === HOST_ROOT) {
