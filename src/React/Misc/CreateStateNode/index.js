@@ -1,7 +1,6 @@
 import { createReactInstance } from "./../index";
 import { createDOMElement } from "./../../DOM";
-
-import { CLASS_COMPONENT, HOST_COMPONENT } from "./../../Constants";
+import { HOST_COMPONENT } from "./../../Constants";
 
 /**
  *  createStateNode :: Fiber -> DOMNode | ReactInstance
@@ -9,7 +8,7 @@ import { CLASS_COMPONENT, HOST_COMPONENT } from "./../../Constants";
 export default fiber => {
   if (fiber.tag === HOST_COMPONENT) {
     return createDOMElement(fiber);
-  } else if (fiber.tag === CLASS_COMPONENT) {
+  } else {
     return createReactInstance(fiber);
   }
 };
