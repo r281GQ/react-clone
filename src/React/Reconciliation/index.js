@@ -5,7 +5,8 @@ import {
   PLACEMENT,
   UPDATE,
   DELETION,
-  CLASS_COMPONENT
+  CLASS_COMPONENT,
+  FUNCTIONAL_COMPONENT
 } from "./../Constants";
 import { updateDOMElement } from "./../DOM";
 import {
@@ -228,7 +229,7 @@ const commitWork = item => {
    *  In reconcileChildren the new Fiber structure gets created every time.
    *  We need to update the reference accordingly.
    */
-  if (item.tag === CLASS_COMPONENT) {
+  if (item.tag === CLASS_COMPONENT || item.tag === FUNCTIONAL_COMPONENT) {
     item.stateNode.__fiber = item;
   }
 
@@ -248,7 +249,10 @@ const commitWork = item => {
     let fiber = item;
     let parentFiber = item.parent;
 
-    while (fiber.tag === CLASS_COMPONENT) {
+    while (
+      fiber.tag === CLASS_COMPONENT ||
+      fiber.tag === FUNCTIONAL_COMPONENT
+    ) {
       fiber = fiber.child;
     }
 
@@ -258,7 +262,10 @@ const commitWork = item => {
     let fiber = item;
     let parentFiber = item.parent;
 
-    while (parentFiber.tag === CLASS_COMPONENT) {
+    while (
+      parentFiber.tag === CLASS_COMPONENT ||
+      parentFiber.tag === FUNCTIONAL_COMPONENT
+    ) {
       parentFiber = parentFiber.parent;
     }
 
@@ -308,6 +315,8 @@ const beginTask = fiber => {
     fiber.partialState = null;
 
     reconcileChildren(fiber, fiber.stateNode.render());
+  } else if (fiber.tag === FUNCTIONAL_COMPONENT) {
+    reconcileChildren(fiber, fiber.stateNode(fiber.props));
   } else if (fiber.tag === HOST_COMPONENT || fiber.tag === HOST_ROOT) {
     reconcileChildren(fiber, fiber.props.children);
   }
