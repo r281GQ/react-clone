@@ -1,7 +1,7 @@
 import createElement from "./createElement";
 
-export { render } from "./Reconciliation";
 export { Component } from "./Component";
+export { createRef } from "./CreateRef";
 
 export default {
   createElement
