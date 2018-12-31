@@ -1,10 +1,8 @@
 import React, { Component, render } from "./React";
 
-class Great extends Component {
-  render() {
-    return <div>Great</div>;
-  }
-}
+const Great = props => (
+  <div style={{ backgroundColor: props.bg }}>{props.title}</div>
+);
 
 class Main extends Component {
   constructor(props) {
@@ -28,17 +26,14 @@ class Main extends Component {
         >
           Change color!
         </button>
-        {this.state.color === "green" ? <Great /> : null}
+        <Great bg="blue" title={this.state.color} />
       </div>
     );
   }
 }
 
 const App = (
-  <div
-    style={{ backgroundColor: "red" }}
-    onClick={() => console.log("From the JSX!")}
-  >
+  <div style={{ backgroundColor: "red" }}>
     <div style={{ textDecoration: "line-through" }}>Text1</div>
     <div>Text2</div>
     <div style={{ textDecoration: "line-through" }}>Text3</div>
