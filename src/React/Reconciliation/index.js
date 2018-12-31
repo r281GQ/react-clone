@@ -296,26 +296,6 @@ const commitAllWork = fiber => {
    */
   fiber.effects.forEach(commitWork);
 
-  const mountEffects = fiber.effects.filter(effect => {
-    return effect.effectTag === PLACEMENT && effect.tag === CLASS_COMPONENT;
-  });
-
-  mountEffects.forEach(effect => {
-    effect.stateNode.componentDidMount();
-  });
-
-  const updateEffects = fiber.effects.filter(effect => {
-    return effect.effectTag === UPDATE && effect.tag === CLASS_COMPONENT;
-  });
-
-  updateEffects.forEach(effect => {
-    effect.stateNode.componentDidUpdate(
-      effect.prevProps,
-      effect.prevState,
-      effect.snapshotEffect
-    );
-  });
-
   /**
    *  Have a reference to the previously built Fiber tree
    *  so we can compare it with the new one
@@ -329,6 +309,34 @@ const commitAllWork = fiber => {
    *  Indicates the the effects been flushed out.
    */
   pendingCommit = null;
+
+  const mountEffects = fiber.effects.filter(effect => {
+    return effect.effectTag === PLACEMENT && effect.tag === CLASS_COMPONENT;
+  });
+
+  mountEffects.forEach(effect => {
+    effect.stateNode.componentDidMount();
+  });
+
+  const unMountEffects = fiber.effects.filter(effect => {
+    return effect.effectTag === DELETION && effect.tag === CLASS_COMPONENT;
+  });
+
+  unMountEffects.forEach(effect => {
+    effect.stateNode.componentWillUnmount();
+  });
+
+  const updateEffects = fiber.effects.filter(effect => {
+    return effect.effectTag === UPDATE && effect.tag === CLASS_COMPONENT;
+  });
+
+  updateEffects.forEach(effect => {
+    effect.stateNode.componentDidUpdate(
+      effect.prevProps,
+      effect.prevState,
+      effect.snapshotEffect
+    );
+  });
 };
 
 /**

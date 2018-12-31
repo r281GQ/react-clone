@@ -14,6 +14,8 @@ export class Component {
 
   componentDidUpdate() {}
 
+  componentWillUnmount() {}
+
   setState(partialState) {
     scheduleUpdate(this, partialState);
   }

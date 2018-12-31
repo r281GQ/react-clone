@@ -86,11 +86,22 @@ class CreateTodo extends Component {
   }
 }
 
+class Visible extends Component {
+  componentWillUnmount() {
+    console.log("Unmounted!");
+  }
+
+  render() {
+    return <div>Visible</div>;
+  }
+}
+
 class Todo extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
+      visible: true,
       todos: [
         {
           completed: false,
@@ -139,8 +150,12 @@ class Todo extends Component {
   render() {
     return (
       <div>
+        <button onClick={() => this.setState({ visible: false })}>
+          Unmount
+        </button>
         <Todos todos={this.state.todos} toggle={this.handleToggle} />
         <CreateTodo onTodoCreation={this.handleTodoAppend} />
+        {this.state.visible ? <Visible /> : null}
       </div>
     );
   }
