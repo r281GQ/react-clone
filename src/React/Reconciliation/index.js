@@ -300,25 +300,92 @@ const commitAllWork = fiber => {
 };
 
 /**
+ *  copyChildren :: Fiber -> Void
+ *
+ *  Copies the Fiber structure from the alternate tree without any modification
+ *  so later the alternate tree is there even when no render was done.
+ */
+const copyChildren = fiber => {
+  /**
+   *  The corresponding Fiber represenation of the JSX coming from the child
+   *  from the previous cycle.
+   */
+  let alternate;
+
+  /**
+   *  If we need to go sideways (there are multiple children in the array)
+   *  we hold the reference of the Fiber created in the previous iteration.
+   */
+  let previousFiber;
+
+  /**
+   *  The Fiber made out of the current ReactElement.
+   */
+  let newFiber;
+
+  /**
+   *  Assign the initital alternate Fiber if there are any.
+   */
+  if (fiber.alternate && fiber.alternate.child) {
+    alternate = fiber.alternate.child;
+  }
+
+  while (alternate) {
+    newFiber = { ...alternate, alternate, parent: fiber, effects: [] };
+
+    /**
+     *  In the first iteration it is a direct parent - child
+     *  relationship.
+     */
+    if (!previousFiber) {
+      fiber.child = newFiber;
+      /**
+       *  in the upcoming iteration we don't attach the new Fiber to the parent
+       *  as it would overwrite the prev reference.
+       *
+       *  Instead we create a sibling relation using the Fiber generated in the prev iteration.
+       */
+    } else {
+      previousFiber.sibling = newFiber;
+    }
+
+    previousFiber = newFiber;
+
+    /**
+     *  As we go sideways with the current tree
+     *  we do the same with the alternate tree.
+     */
+    alternate = alternate.sibling;
+  }
+};
+
+/**
+ *  calculateState :: Fiber -> State
+ */
+const calculateState = fiber => {
+  let nextState = fiber.partialState
+    ? {
+        ...fiber.stateNode.state,
+        ...fiber.partialState
+      }
+    : fiber.stateNode.state;
+
+  fiber.partialState = null;
+
+  const derivedState = fiber.type.getDerivedStateFromProps(
+    fiber.props,
+    nextState
+  );
+
+  return { ...nextState, ...derivedState };
+};
+
+/**
  *  beginTask :: Fiber -> Void
  */
 const beginTask = fiber => {
   if (fiber.tag === CLASS_COMPONENT) {
-    let nextState = fiber.partialState
-      ? {
-          ...fiber.stateNode.state,
-          ...fiber.partialState
-        }
-      : fiber.stateNode.state;
-
-    fiber.partialState = null;
-
-    const derivedState = fiber.type.getDerivedStateFromProps(
-      fiber.props,
-      nextState
-    );
-
-    nextState = { ...nextState, ...derivedState };
+    const nextState = calculateState(fiber);
 
     const shouldRender =
       fiber.effectTag === PLACEMENT
@@ -330,6 +397,7 @@ const beginTask = fiber => {
     fiber.stateNode.state = nextState;
 
     if (shouldRender) reconcileChildren(fiber, fiber.stateNode.render());
+    else copyChildren(fiber);
   } else if (fiber.tag === FUNCTIONAL_COMPONENT) {
     reconcileChildren(fiber, fiber.stateNode(fiber.props));
   } else if (fiber.tag === HOST_COMPONENT || fiber.tag === HOST_ROOT) {

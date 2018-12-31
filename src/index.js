@@ -65,7 +65,7 @@ class CreateTodo extends Component {
         >
           <input
             value={this.state.input}
-            onChange={e => this.setState({ input: e.target.value })}
+            onInput={e => this.setState({ input: e.target.value })}
           />
           <button
             onClick={() => {
@@ -74,6 +74,8 @@ class CreateTodo extends Component {
                 completed: false,
                 id: Math.round(Math.random() * 10000, 2)
               });
+
+              this.setState({ input: "" });
             }}
           >
             {`Create todo`}
