@@ -234,7 +234,8 @@ const commitWork = item => {
   }
 
   if (item.effectTag === UPDATE) {
-    updateDOMElement(item.stateNode, item.alternate.props, item.props);
+    if (item.tag === HOST_COMPONENT || item.tag === HOST_ROOT)
+      updateDOMElement(item.stateNode, item.alternate.props, item.props);
 
     /**
      *  If it was an update but there was type mismatch
