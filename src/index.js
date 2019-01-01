@@ -1,4 +1,4 @@
-import React, { createRef, useState, Component } from "./React";
+import React, { createRef, useEffect, useState, Component } from "./React";
 import { render } from "./ReactDOM";
 
 class Todos extends Component {
@@ -93,6 +93,12 @@ const Counter = () => {
   const [value, setValue] = useState(0);
 
   const [greeting, setGreeting] = useState("Hey!");
+
+  useEffect(() => {
+    console.log("From effect! " + value);
+
+    return () => console.log("Clean up! " + value);
+  });
 
   return (
     <div>

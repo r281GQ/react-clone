@@ -162,10 +162,19 @@ const reconcileChildren = (fiber, children) => {
         tag: getTag(element),
         parent: fiber,
         effects: [],
-        effectTag: PLACEMENT
+        effectTag: PLACEMENT,
+        updateQueue: []
       };
 
       newFiber.stateNode = createStateNode(newFiber);
+
+      if (getTag(element) === FUNCTIONAL_COMPONENT) {
+        newFiber.memoizedState = {
+          memoizedState: undefined,
+          next: undefined,
+          queue: undefined
+        };
+      }
 
       alternate.effectTag = DELETION;
 
@@ -186,6 +195,7 @@ const reconcileChildren = (fiber, children) => {
         parent: fiber,
         effects: [],
         effectTag: UPDATE,
+        updateQueue: [],
         memoizedState: alternate.memoizedState,
         snapshotEffect: alternate.stateNode.getSnapshotBeforeUpdate
           ? true
@@ -202,7 +212,8 @@ const reconcileChildren = (fiber, children) => {
         tag: getTag(element),
         parent: fiber,
         effects: [],
-        effectTag: PLACEMENT
+        effectTag: PLACEMENT,
+        updateQueue: []
       };
 
       if (getTag(element) === FUNCTIONAL_COMPONENT) {
@@ -335,6 +346,22 @@ const commitAllWork = fiber => {
    *  Indicates the the effects been flushed out.
    */
   pendingCommit = null;
+
+  const effectHooks = fiber.effects.filter(effect => {
+    return effect.updateQueue.length !== 0;
+  });
+
+  effectHooks.forEach(effect =>
+    effect.updateQueue.forEach(hook => {
+      let destroy = hook.destroy;
+
+      if (typeof destroy === "function") {
+        destroy();
+      }
+
+      hook.destroy = hook.create();
+    })
+  );
 
   const assignRefs = fiber.effects.filter(
     effect =>

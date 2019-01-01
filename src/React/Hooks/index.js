@@ -96,6 +96,38 @@ export const useState = initialState => {
 };
 
 /**
+ *  useEffect :: (a -> a -> Void, [a]) -> Void
+ */
+export const useEffect = (create, input) => {
+  getNextHook();
+
+  let prevEffect;
+
+  if (!currentHook.queue) {
+    currentHook.memoizedState = {
+      create,
+      destroy: null,
+      input,
+      effect: "passive_effect"
+    };
+    currentHook.queue = [currentHook.memoizedState];
+  } else {
+    prevEffect = currentHook.memoizedState;
+
+    currentHook.memoizedState = {
+      create,
+      destroy: prevEffect.destroy,
+      input,
+      effect: "passive_effect"
+    };
+
+    currentHook.queue.push(currentHook.memoizedState);
+  }
+
+  currentFiber.updateQueue.push(currentHook.memoizedState);
+};
+
+/**
  *  updateFunctionalComponent :: (a -> ReactElement) -> ReactElement
  */
 export const updateFunctionalComponent = fn => {
