@@ -286,8 +286,8 @@ const commitAllWork = fiber => {
 
   withSnapshot.forEach(effect => {
     effect.snapshotEffect = effect.stateNode.getSnapshotBeforeUpdate(
-      effect.prevProps,
-      effect.prevState
+      effect.memoizedProps,
+      effect.memoizedState
     );
   });
 
@@ -362,8 +362,8 @@ const commitAllWork = fiber => {
 
   updateEffects.forEach(effect => {
     effect.stateNode.componentDidUpdate(
-      effect.prevProps,
-      effect.prevState,
+      effect.memoizedProps,
+      effect.memoizedState,
       effect.snapshotEffect
     );
   });
@@ -463,16 +463,13 @@ const beginTask = fiber => {
         : fiber.stateNode.shouldComponentUpdate(fiber.props, nextState);
 
     if (fiber.effectTag === UPDATE) {
-      fiber.prevState = fiber.stateNode.state;
-      fiber.prevProps = fiber.stateNode.props;
+      fiber.memoizedState = fiber.stateNode.state;
+      fiber.memoizedProps = fiber.stateNode.props;
     }
 
     fiber.stateNode.props = fiber.props;
 
     fiber.stateNode.state = nextState;
-
-    if (fiber.snapshotEffect) {
-    }
 
     if (shouldRender) {
       reconcileChildren(fiber, fiber.stateNode.render());
@@ -559,7 +556,7 @@ const workLoop = deadLine => {
 const performTask = deadLine => {
   workLoop(deadLine);
 
-  if (subTask || taskQueue.length > 0) {
+  if (subTask || !taskQueue.isEmpty) {
     requestIdleCallback(performTask);
   }
 };

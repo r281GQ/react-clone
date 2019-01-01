@@ -70,13 +70,15 @@ class CreateTodo extends Component {
           />
           <button
             onClick={() => {
-              this.props.onTodoCreation({
-                name: this.state.input,
-                completed: false,
-                id: Math.round(Math.random() * 10000, 2)
-              });
+              if (this.state.input !== "") {
+                this.props.onTodoCreation({
+                  name: this.state.input,
+                  completed: false,
+                  id: Math.round(Math.random() * 10000, 2)
+                });
 
-              this.setState({ input: "" });
+                this.setState({ input: "" });
+              }
             }}
           >
             {`Create todo`}
@@ -84,16 +86,6 @@ class CreateTodo extends Component {
         </div>
       </div>
     );
-  }
-}
-
-class Visible extends Component {
-  componentWillUnmount() {
-    console.log("Unmounted!");
-  }
-
-  render() {
-    return <div>Visible</div>;
   }
 }
 
@@ -154,12 +146,8 @@ class Todo extends Component {
   render() {
     return (
       <div ref={this.ref}>
-        <button onClick={() => this.setState({ visible: false })}>
-          Unmount
-        </button>
         <Todos todos={this.state.todos} toggle={this.handleToggle} />
         <CreateTodo onTodoCreation={this.handleTodoAppend} />
-        {this.state.visible ? <Visible /> : null}
       </div>
     );
   }
