@@ -5,3 +5,4 @@ export { default as createReactInstance } from "./CreateReactInstance";
 export { default as getTag } from "./GetTag";
 export { default as createStateNode } from "./CreateStateNode";
 export { default as traverseToRoot } from "./TraverseToRoot";
+export * from "./WorkInProgressFiber";
