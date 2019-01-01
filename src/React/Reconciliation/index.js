@@ -6,7 +6,8 @@ import {
   UPDATE,
   DELETION,
   CLASS_COMPONENT,
-  FUNCTIONAL_COMPONENT
+  FUNCTIONAL_COMPONENT,
+  PASSIVE_EFFECT
 } from "./../Constants";
 import { updateDOMElement } from "./../DOM";
 import {
@@ -347,19 +348,39 @@ const commitAllWork = fiber => {
    */
   pendingCommit = null;
 
+  /**
+   *  Gathers effects that has an updateQueue.
+   */
   const effectHooks = fiber.effects.filter(effect => {
     return effect.updateQueue.length !== 0;
   });
 
   effectHooks.forEach(effect =>
     effect.updateQueue.forEach(hook => {
-      let destroy = hook.destroy;
+      /**
+       *  If it is a normal effect call the destroy method first
+       *  if any, than call the effect and assign the clean up function.
+       *
+       *  Prevent calling the effect function if it is an unmount.
+       */
+      if (hook.effect === PASSIVE_EFFECT) {
+        let destroy = hook.destroy;
 
-      if (typeof destroy === "function") {
-        destroy();
+        if (typeof destroy === "function") {
+          destroy();
+        }
+
+        if (effect.effectTag !== DELETION) {
+          hook.destroy = hook.create();
+        }
+        /**
+         *  On no_effect only call the effect function if it is a deletion.
+         */
+      } else {
+        if (effect.effectTag === DELETION) {
+          hook.destroy();
+        }
       }
-
-      hook.destroy = hook.create();
     })
   );
 

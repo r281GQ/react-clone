@@ -94,11 +94,14 @@ const Counter = () => {
 
   const [greeting, setGreeting] = useState("Hey!");
 
-  useEffect(() => {
-    console.log("From effect! " + value);
+  useEffect(
+    () => {
+      console.log("From effect! " + value);
 
-    return () => console.log("Clean up! " + value);
-  });
+      return () => console.log("Clean up! " + value);
+    },
+    [greeting]
+  );
 
   return (
     <div>
