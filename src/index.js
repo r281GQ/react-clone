@@ -1,4 +1,4 @@
-import React, { createRef, Component } from "./React";
+import React, { createRef, useState, Component } from "./React";
 import { render } from "./ReactDOM";
 
 class Todos extends Component {
@@ -89,6 +89,21 @@ class CreateTodo extends Component {
   }
 }
 
+const Counter = () => {
+  const [value, setValue] = useState(0);
+
+  const [greeting, setGreeting] = useState("Hey!");
+
+  return (
+    <div>
+      <button onClick={() => setValue(value + 1)}>Increment</button>
+      <div>{value}</div>
+      <button onClick={() => setGreeting("Morning!")}>Set greeting!</button>
+      <div>{greeting}</div>
+    </div>
+  );
+};
+
 class Todo extends Component {
   constructor(props) {
     super(props);
@@ -148,6 +163,7 @@ class Todo extends Component {
       <div ref={this.ref}>
         <Todos todos={this.state.todos} toggle={this.handleToggle} />
         <CreateTodo onTodoCreation={this.handleTodoAppend} />
+        <Counter />
       </div>
     );
   }
