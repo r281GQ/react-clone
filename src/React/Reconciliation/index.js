@@ -15,8 +15,11 @@ import {
   createQueue,
   getTag,
   requestIdleCallback,
+  setWorkInProgressFiber,
   traverseToRoot
 } from "./../Misc";
+
+import { updateFunctionalComponent } from "./../Hooks";
 
 /**
  *  Queue data structure holding the tasks that needs to be processed.
@@ -51,6 +54,20 @@ const getFirstSubTask = () => {
      *  to the partialState.
      */
     task.instance.__fiber.partialState = task.partialState;
+
+    return {
+      props: root.props,
+      alternate: root,
+      stateNode: root.stateNode,
+      child: null,
+      sibling: null,
+      tag: HOST_ROOT,
+      effects: []
+    };
+  }
+
+  if (task.from === FUNCTIONAL_COMPONENT) {
+    const root = traverseToRoot({ __fiber: task.fiber });
 
     return {
       props: root.props,
@@ -169,6 +186,7 @@ const reconcileChildren = (fiber, children) => {
         parent: fiber,
         effects: [],
         effectTag: UPDATE,
+        memoizedState: alternate.memoizedState,
         snapshotEffect: alternate.stateNode.getSnapshotBeforeUpdate
           ? true
           : undefined
@@ -186,6 +204,14 @@ const reconcileChildren = (fiber, children) => {
         effects: [],
         effectTag: PLACEMENT
       };
+
+      if (getTag(element) === FUNCTIONAL_COMPONENT) {
+        newFiber.memoizedState = {
+          memoizedState: undefined,
+          next: undefined,
+          queue: undefined
+        };
+      }
 
       newFiber.stateNode = createStateNode(newFiber);
     }
@@ -454,6 +480,8 @@ const calculateState = fiber => {
  *  beginTask :: Fiber -> Void
  */
 const beginTask = fiber => {
+  setWorkInProgressFiber(fiber);
+
   if (fiber.tag === CLASS_COMPONENT) {
     const nextState = calculateState(fiber);
 
@@ -477,7 +505,10 @@ const beginTask = fiber => {
       copyChildren(fiber);
     }
   } else if (fiber.tag === FUNCTIONAL_COMPONENT) {
-    reconcileChildren(fiber, fiber.stateNode(fiber.props));
+    reconcileChildren(
+      fiber,
+      updateFunctionalComponent(() => fiber.stateNode(fiber.props))
+    );
   } else if (fiber.tag === HOST_COMPONENT || fiber.tag === HOST_ROOT) {
     reconcileChildren(fiber, fiber.props.children);
   }
@@ -580,6 +611,15 @@ export const scheduleUpdate = (instance, partialState) => {
     from: CLASS_COMPONENT,
     instance,
     partialState
+  });
+
+  requestIdleCallback(performTask);
+};
+
+export const scheduleFunctionalUpdate = fiber => {
+  taskQueue.push({
+    from: FUNCTIONAL_COMPONENT,
+    fiber
   });
 
   requestIdleCallback(performTask);
