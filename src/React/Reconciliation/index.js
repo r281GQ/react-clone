@@ -158,15 +158,6 @@ const reconcileChildren = (fiber, children) => {
   const elementMap = new Map();
 
   /**
-   *  Populate the map.
-   */
-  while (alternate) {
-    elementMap.set(alternate.index, alternate);
-
-    alternate = alternate.sibling;
-  }
-
-  /**
    *  Uniq id for the given ReactElement/Fiber.
    */
   let currentIndex;
@@ -184,13 +175,26 @@ const reconcileChildren = (fiber, children) => {
   while (index < numberOfElements) {
     element = arrifiedChildren[index];
 
+    let isDynamicChildren = arrifiedChildren.every(i => i.isArray);
+
     if (arrifiedChildren.every(i => i.isArray && !i.props.key)) {
       throw new Error("every eleement in an array must have a unqie key");
     }
 
+    /**
+     *  Populate the map.
+     */
+    while (alternate) {
+      elementMap.set(
+        isDynamicChildren ? alternate.key : alternate.index,
+        alternate
+      );
+
+      alternate = alternate.sibling;
+    }
+
     // console.log(fiber);
 
-    let isDynamicChildren = arrifiedChildren.every(i => i.isArray);
     // let isDynamicChildren = false;
 
     currentIndex = isDynamicChildren ? element.props.key : element.index;

@@ -1,26 +1,42 @@
 import React, { createRef, useEffect, useState, Component } from "./React";
 import { render } from "./ReactDOM";
 
+class El extends Component {
+  constructor(props) {
+    super(props);
+
+    this.state = { value: 0 };
+  }
+
+  render() {
+    return (
+      <div style={{ display: "flex", justifyContent: "space-around" }}>
+        {this.state.value}
+        <div
+          style={{
+            textDecoration: this.props.todo.completed ? "line-through" : "none"
+          }}
+        >
+          {this.props.todo.name}
+        </div>
+        <button onClick={() => this.props.toggle(this.props.todo)}>
+          {this.props.todo.completed ? `Mark it undone` : `Mark it complete`}
+        </button>
+
+        <button onClick={() => this.setState({ value: this.state.value + 1 })}>
+          {`change internal state`}
+        </button>
+      </div>
+    );
+  }
+}
+
 class Todos extends Component {
   render() {
     return (
       <div>
         {this.props.todos.map(todo => (
-          <div
-            key={todo.id}
-            style={{ display: "flex", justifyContent: "space-around" }}
-          >
-            <div
-              style={{
-                textDecoration: todo.completed ? "line-through" : "none"
-              }}
-            >
-              {todo.name}
-            </div>
-            <button onClick={() => this.props.toggle(todo)}>
-              {todo.completed ? `Mark it undone` : `Mark it complete`}
-            </button>
-          </div>
+          <El key={todo.id} todo={todo} toggle={this.props.toggle} />
         ))}
       </div>
     );
@@ -165,6 +181,14 @@ class Todo extends Component {
     this.setState({ todos: copy });
   }
 
+  remove() {
+    const copy = [...this.state.todos];
+
+    copy.splice(copy.length - 3, 1);
+
+    this.setState({ todos: copy });
+  }
+
   handleTodoAppend(todo) {
     this.setState({ todos: [...this.state.todos, todo] });
   }
@@ -187,6 +211,8 @@ class Todo extends Component {
         <button onClick={() => this.setState({ visible: false, keyToPass: 2 })}>
           Unmount
         </button>
+
+        <button onClick={this.remove.bind(this)}>remove</button>
       </div>
     );
   }
