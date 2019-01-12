@@ -1,7 +1,7 @@
 import React, { createRef, useEffect, useState, Component } from "./React";
 import { render } from "./ReactDOM";
 
-import { createStore, combineReducers } from "./Redux";
+import { createStore, combineReducers, applyMiddleware } from "./Redux";
 
 class TodoElement extends Component {
   constructor(props) {
@@ -201,6 +201,8 @@ const root = document.getElementById("root");
 
 // render(<Todo nullify={false} />, root);
 
+const logger = ({ getState, dispatch }) => next => action => {};
+
 const ADD_TODO = "add_todo";
 const INC = "inc";
 
@@ -232,7 +234,7 @@ const reducer = combineReducers({
   counter: counterReducer
 });
 
-const store = createStore(reducer, initialState);
+const store = createStore(reducer, initialState, applyMiddleware(logger));
 
 store.subscribe(() => console.log(store.getState()));
 
