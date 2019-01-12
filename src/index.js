@@ -1,6 +1,8 @@
 import React, { createRef, useEffect, useState, Component } from "./React";
 import { render } from "./ReactDOM";
 
+import { createStore, combineReducers } from "./Redux";
+
 class TodoElement extends Component {
   constructor(props) {
     super(props);
@@ -197,4 +199,61 @@ class Todo extends Component {
 
 const root = document.getElementById("root");
 
-render(<Todo nullify={false} />, root);
+// render(<Todo nullify={false} />, root);
+
+const ADD_TODO = "add_todo";
+const INC = "inc";
+
+const initialState = {
+  todos: [],
+  counter: 0
+};
+
+const todoReducer = (state, action) => {
+  switch (action.type) {
+    case ADD_TODO:
+      return state.concat([action.payload]);
+    default:
+      return state;
+  }
+};
+
+const counterReducer = (state, action) => {
+  switch (action.type) {
+    case INC:
+      return state + 1;
+    default:
+      return state;
+  }
+};
+
+const reducer = combineReducers({
+  todos: todoReducer,
+  counter: counterReducer
+});
+
+const store = createStore(reducer, initialState);
+
+store.subscribe(() => console.log(store.getState()));
+
+store.dispatch({
+  type: ADD_TODO,
+  payload: {
+    completed: false,
+    id: 2,
+    name: "Make coffee!"
+  }
+});
+
+store.dispatch({
+  type: INC
+});
+
+store.dispatch({
+  type: ADD_TODO,
+  payload: {
+    completed: false,
+    id: 1,
+    name: "Where did I go wrong?"
+  }
+});
