@@ -21,14 +21,20 @@ const createElement = (type, config, ...args) => {
   }
 
   const rawChildren = hasChildren ? [].concat(...args) : [];
-
+  // console.log(rawChildren);
   /**
    *  Filter out falsy elements. Return the child itself if that is a Class/Function component.
    *  Create text element otherwise.
    */
   props.children = rawChildren
-    .filter(c => c != null && c !== false)
-    .map(c => (c instanceof Object ? c : createTextElement(c)));
+    .filter(c => c != null)
+    .map(c => {
+      if (c === false) {
+        return null;
+      }
+
+      return c instanceof Object ? c : createTextElement(c);
+    });
   return { type, props };
 };
 
