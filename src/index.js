@@ -170,12 +170,13 @@ class Todo extends Component {
   render() {
     return (
       <div ref={this.ref}>
+        {this.state.visible && <div>meaningless component</div>}
+        <Counter />
         <Todos todos={this.state.todos} toggle={this.handleToggle} />
         <CreateTodo onTodoCreation={this.handleTodoAppend} />
         <button onClick={() => this.setState({ visible: false })}>
           Unmount
         </button>
-        {this.state.visible && <Counter />}
       </div>
     );
   }
