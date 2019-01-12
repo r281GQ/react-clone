@@ -1,7 +1,7 @@
 import React, { createRef, useEffect, useState, Component } from "./React";
 import { render } from "./ReactDOM";
 
-class El extends Component {
+class TodoElement extends Component {
   constructor(props) {
     super(props);
 
@@ -24,7 +24,7 @@ class El extends Component {
         </button>
 
         <button onClick={() => this.setState({ value: this.state.value + 1 })}>
-          {`change internal state`}
+          {`Change internal state!`}
         </button>
       </div>
     );
@@ -36,32 +36,12 @@ class Todos extends Component {
     return (
       <div>
         {this.props.todos.map(todo => (
-          <El key={todo.id} todo={todo} toggle={this.props.toggle} />
+          <TodoElement key={todo.id} todo={todo} toggle={this.props.toggle} />
         ))}
       </div>
     );
   }
 }
-
-// const Todos = props => (
-//   <div>
-//     {props.todos.map(todo => (
-//       <div
-//         key={todo.id}
-//         style={{ display: "flex", justifyContent: "space-around" }}
-//       >
-//         <div
-//           style={{ textDecoration: todo.completed ? "line-through" : "none" }}
-//         >
-//           {todo.name}
-//         </div>
-//         <button onClick={() => props.toggle(todo)}>
-//           {todo.completed ? `Mark it undone` : `Mark it complete`}
-//         </button>
-//       </div>
-//     ))}
-//   </div>
-// );
 
 class CreateTodo extends Component {
   constructor(props) {
@@ -110,8 +90,6 @@ const Counter = () => {
 
   const [greeting, setGreeting] = useState("Hey!");
 
-  console.log("sdf");
-
   useEffect(
     () => {
       console.log("From effect! " + value);
@@ -125,7 +103,6 @@ const Counter = () => {
     <div>
       <button
         onClick={() => {
-          console.log("222");
           setValue(value + 1);
         }}
       >
@@ -169,6 +146,7 @@ class Todo extends Component {
 
     this.handleTodoAppend = this.handleTodoAppend.bind(this);
     this.handleToggle = this.handleToggle.bind(this);
+    this.removeFixedElementTodo = this.removeFixedElementTodo.bind(this);
   }
 
   handleToggle(todo) {
@@ -181,7 +159,7 @@ class Todo extends Component {
     this.setState({ todos: copy });
   }
 
-  remove() {
+  removeFixedElementTodo() {
     const copy = [...this.state.todos];
 
     copy.splice(copy.length - 3, 1);
@@ -204,15 +182,14 @@ class Todo extends Component {
   render() {
     return (
       <div ref={this.ref}>
-        {this.state.visible && <div>meaningless component</div>}
+        {this.state.visible && <div>Meaningless component!</div>}
         <Counter key={this.state.keyToPass} />
         <Todos todos={this.state.todos} toggle={this.handleToggle} />
         <CreateTodo onTodoCreation={this.handleTodoAppend} />
         <button onClick={() => this.setState({ visible: false, keyToPass: 2 })}>
           Unmount
         </button>
-
-        <button onClick={this.remove.bind(this)}>remove</button>
+        <button onClick={this.removeFixedElementTodo}>remove</button>
       </div>
     );
   }
