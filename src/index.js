@@ -94,6 +94,8 @@ const Counter = () => {
 
   const [greeting, setGreeting] = useState("Hey!");
 
+  console.log("sdf");
+
   useEffect(
     () => {
       console.log("From effect! " + value);
@@ -105,7 +107,14 @@ const Counter = () => {
 
   return (
     <div>
-      <button onClick={() => setValue(value + 1)}>Increment</button>
+      <button
+        onClick={() => {
+          console.log("222");
+          setValue(value + 1);
+        }}
+      >
+        Increment
+      </button>
       <div>{value}</div>
       <button onClick={() => setGreeting("Morning!")}>Set greeting!</button>
       <div>{greeting}</div>
@@ -120,6 +129,7 @@ class Todo extends Component {
     this.ref = createRef();
 
     this.state = {
+      keyToPass: 1,
       ref: undefined,
       visible: true,
       todos: [
@@ -171,10 +181,10 @@ class Todo extends Component {
     return (
       <div ref={this.ref}>
         {this.state.visible && <div>meaningless component</div>}
-        <Counter />
+        <Counter key={this.state.keyToPass} />
         <Todos todos={this.state.todos} toggle={this.handleToggle} />
         <CreateTodo onTodoCreation={this.handleTodoAppend} />
-        <button onClick={() => this.setState({ visible: false })}>
+        <button onClick={() => this.setState({ visible: false, keyToPass: 2 })}>
           Unmount
         </button>
       </div>

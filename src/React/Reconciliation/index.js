@@ -193,18 +193,28 @@ const reconcileChildren = (fiber, children) => {
     /**
      *  If they are in the same slot, but types differ.
      */
-    if (hasAlternate && element.type !== currentAlternate.type) {
+    if (
+      hasAlternate &&
+      (element.type !== currentAlternate.type ||
+        (element.type === currentAlternate.type &&
+          element.props.key &&
+          element.props.key !== currentAlternate.key))
+    ) {
       newFiber = {
         index: currentIndex,
-        alternate,
+        alternate: currentAlternate,
         props: element.props,
         type: element.type,
         tag: getTag(element),
         parent: fiber,
         effects: [],
-        effectTag: PLACEMENT,
+        effectTag: "w",
         updateQueue: []
       };
+
+      if (element.props.key) {
+        newFiber.key = element.props.key;
+      }
 
       newFiber.stateNode = createStateNode(newFiber);
 
@@ -216,7 +226,7 @@ const reconcileChildren = (fiber, children) => {
         };
       }
 
-      currentAlternate.effectTag = DELETION;
+      currentAlternate.effectTag = "ww";
 
       fiber.effects.push(currentAlternate);
       /**
@@ -240,6 +250,11 @@ const reconcileChildren = (fiber, children) => {
           ? true
           : undefined
       };
+
+      if (currentAlternate.key) {
+        newFiber.key = currentAlternate.key;
+      }
+
       /**
        *  Create new Fiber with a 'PLACEMENT' tag.
        */
@@ -254,6 +269,10 @@ const reconcileChildren = (fiber, children) => {
         effectTag: PLACEMENT,
         updateQueue: []
       };
+
+      if (element.props.key) {
+        newFiber.key = element.props.key;
+      }
 
       if (getTag(element) === FUNCTIONAL_COMPONENT) {
         newFiber.memoizedState = {
@@ -275,7 +294,7 @@ const reconcileChildren = (fiber, children) => {
      *  In the first iteration it is a direct parent - child
      *  relationship.
      */
-    if (index === 0) {
+    if (!previousFiber) {
       fiber.child = newFiber;
       /**
        *  in the upcoming iteration we don't attach the new Fiber to the parent
@@ -318,7 +337,40 @@ const commitWork = item => {
     item.stateNode.__fiber = item;
   }
 
-  if (item.effectTag === UPDATE) {
+  if (item.effectTag === "w") {
+    let fiber = item;
+    let parentFiber = item.parent;
+
+    let alternate = item.alternate;
+    let pal = parentFiber.alternate;
+
+    while (
+      parentFiber.tag === CLASS_COMPONENT ||
+      parentFiber.tag === FUNCTIONAL_COMPONENT
+    ) {
+      parentFiber = parentFiber.parent;
+    }
+
+    while (pal.tag === CLASS_COMPONENT || pal.tag === FUNCTIONAL_COMPONENT) {
+      pal = pal.parent;
+    }
+    while (
+      fiber.tag === CLASS_COMPONENT ||
+      fiber.tag === FUNCTIONAL_COMPONENT
+    ) {
+      fiber = fiber.child;
+    }
+
+    while (
+      alternate.tag === CLASS_COMPONENT ||
+      alternate.tag === FUNCTIONAL_COMPONENT
+    ) {
+      alternate = alternate.child;
+    }
+
+    parentFiber.stateNode.replaceChild(fiber.stateNode, alternate.stateNode);
+  } else if (item.effectTag === UPDATE) {
+    console.log("sd3333");
     if (item.tag === HOST_COMPONENT || item.tag === HOST_ROOT)
       updateDOMElement(item.stateNode, item.alternate.props, item.props);
 
@@ -329,6 +381,7 @@ const commitWork = item => {
      *  DOMNode.
      */
     if (item.parent.stateNode !== item.alternate.parent.stateNode) {
+      console.log("999");
       let parentFiber = item.parent;
 
       while (
@@ -338,7 +391,7 @@ const commitWork = item => {
         parentFiber = parentFiber.parent;
       }
 
-      parentFiber.stateNode.appendChild(item.stateNode);
+      parentFiber.stateNode.replaceChild(item.stateNode, item.stateNode);
     }
   } else if (item.effectTag === DELETION) {
     let fiber = item;
