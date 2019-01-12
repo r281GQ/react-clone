@@ -184,7 +184,16 @@ const reconcileChildren = (fiber, children) => {
   while (index < numberOfElements) {
     element = arrifiedChildren[index];
 
-    currentIndex = element.index;
+    if (arrifiedChildren.every(i => i.isArray && !i.props.key)) {
+      throw new Error("every eleement in an array must have a unqie key");
+    }
+
+    // console.log(fiber);
+
+    let isDynamicChildren = arrifiedChildren.every(i => i.isArray);
+    // let isDynamicChildren = false;
+
+    currentIndex = isDynamicChildren ? element.props.key : element.index;
 
     hasAlternate = elementMap.has(currentIndex);
 
@@ -202,14 +211,15 @@ const reconcileChildren = (fiber, children) => {
     ) {
       newFiber = {
         index: currentIndex,
-        alternate: currentAlternate,
+        alternate: null,
         props: element.props,
         type: element.type,
         tag: getTag(element),
         parent: fiber,
         effects: [],
         effectTag: "w",
-        updateQueue: []
+        updateQueue: [],
+        d: currentAlternate
       };
 
       if (element.props.key) {
@@ -329,6 +339,7 @@ const reconcileChildren = (fiber, children) => {
  *  Takes on Fiber with an Effect at time and performs DOM mutation.
  */
 const commitWork = item => {
+  console.log(item);
   /**
    *  In reconcileChildren the new Fiber structure gets created every time.
    *  We need to update the reference accordingly.
@@ -341,7 +352,7 @@ const commitWork = item => {
     let fiber = item;
     let parentFiber = item.parent;
 
-    let alternate = item.alternate;
+    let alternate = item.d;
     let pal = parentFiber.alternate;
 
     while (

@@ -20,7 +20,21 @@ const createElement = (type, config, ...args) => {
     return { type, props };
   }
 
-  const rawChildren = hasChildren ? [].concat(...args) : [];
+  let f = args.map(
+    child => {
+      // console.log(child);
+
+      if (Array.isArray(child))
+        return child.map(x => ({ ...x, isArray: true }));
+
+      return child;
+    }
+    // Array.isArray(child) ? { ...child, isArray: true } : child
+  );
+
+  const rawChildren = hasChildren ? [].concat(...f) : [];
+
+  // const rawChildren = hasChildren ? [].concat(...args) : [];
   // console.log(rawChildren);
   /**
    *  Filter out falsy elements. Return the child itself if that is a Class/Function component.
@@ -33,7 +47,11 @@ const createElement = (type, config, ...args) => {
         return null;
       }
 
-      return c instanceof Object ? c : createTextElement(c);
+      const child = c instanceof Object ? c : createTextElement(c);
+
+      // console.log(child);
+
+      return child;
     });
   return { type, props };
 };
