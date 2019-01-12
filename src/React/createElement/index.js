@@ -47,7 +47,7 @@ const createElement = (type, config, ...args) => {
    */
   props.children = rawChildren
     .filter(c => c != null)
-    .map(!c ? null : createValidElement(c));
+    .map(c => (!c ? null : createValidElement(c)));
   return { type, props };
 };
 
