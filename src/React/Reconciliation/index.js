@@ -93,12 +93,25 @@ const getFirstSubTask = () => {
 };
 
 /**
+ *  addIndex :: (ReactElement, Number) -> ReactElement | Null
+ */
+const addIndex = (element, index) =>
+  element != null ? { ...element, index } : null;
+
+/**
+ *  filterNull :: (ReactElement | Null) -> ReactElement
+ */
+const filterNull = element => element != null;
+
+/**
  *  reconcileChildren :: (Fiber, Children | [Children]) -> Void
  *
  *  Fibers are created here.
  */
 const reconcileChildren = (fiber, children) => {
-  const arrifiedChildren = arrify(children);
+  const arrifiedChildren = arrify(children)
+    .map(addIndex)
+    .filter(filterNull);
 
   /**
    *  Current index of the iteration.
@@ -139,24 +152,50 @@ const reconcileChildren = (fiber, children) => {
     alternate = fiber.alternate.child;
   }
 
-  while (index < numberOfElements || alternate) {
+  /**
+   *  Hold Key - Fiber pairs in a Hashtable for quick lookup.
+   */
+  const elementMap = new Map();
+
+  /**
+   *  Populate the map.
+   */
+  while (alternate) {
+    elementMap.set(alternate.index, alternate);
+
+    alternate = alternate.sibling;
+  }
+
+  /**
+   *  Uniq id for the given ReactElement/Fiber.
+   */
+  let currentIndex;
+
+  /**
+   *  Alternate Fiber for the the ReactElement currently being processed.
+   */
+  let currentAlternate;
+
+  /**
+   *  ReactElement currently being processed has an alternate Fiber.
+   */
+  let hasAlternate;
+
+  while (index < numberOfElements) {
     element = arrifiedChildren[index];
 
-    /**
-     *  If there is an alternate while there is no child
-     *  that means the DOMNode got deleted.
-     */
-    if (!element && alternate) {
-      alternate.effectTag = DELETION;
-      fiber.effects.push(alternate);
+    currentIndex = element.index;
 
-      /**
-       *  If the Fiber was present previuosly but there is
-       *  a type mismatch we need to create a new
-       *  DOMNode and delete the old one.
-       */
-    } else if (element && alternate && element.type !== alternate.type) {
+    hasAlternate = elementMap.has(currentIndex);
+
+    currentAlternate = elementMap.get(currentIndex);
+
+    /**
+     *  If they are in the same slot, but types differ.
+     */
+    if (hasAlternate && element.type !== currentAlternate.type) {
       newFiber = {
+        index: currentIndex,
         alternate,
         props: element.props,
         type: element.type,
@@ -177,37 +216,36 @@ const reconcileChildren = (fiber, children) => {
         };
       }
 
-      alternate.effectTag = DELETION;
+      currentAlternate.effectTag = DELETION;
 
-      fiber.effects.push(alternate);
-
+      fiber.effects.push(currentAlternate);
       /**
-       *  If the Fiber was present previuosly and it is now
-       *  just simply update its props.
+       *  They are in the same slot, just update props.
        */
-    } else if (element && alternate) {
+    } else if (hasAlternate && element.type === currentAlternate.type) {
       newFiber = {
-        alternate,
+        index: currentAlternate.index,
+        alternate: currentAlternate,
         props: element.props,
         type: element.type,
         tag: getTag(element),
-        stateNode: alternate.stateNode,
-        partialState: alternate.partialState,
+        stateNode: currentAlternate.stateNode,
+        partialState: currentAlternate.partialState,
         parent: fiber,
         effects: [],
         effectTag: UPDATE,
         updateQueue: [],
-        memoizedState: alternate.memoizedState,
-        snapshotEffect: alternate.stateNode.getSnapshotBeforeUpdate
+        memoizedState: currentAlternate.memoizedState,
+        snapshotEffect: currentAlternate.stateNode.getSnapshotBeforeUpdate
           ? true
           : undefined
       };
-
       /**
-       *  Initial render.
+       *  Create new Fiber with a 'PLACEMENT' tag.
        */
-    } else if (element && !alternate) {
+    } else if (!hasAlternate) {
       newFiber = {
+        index: element.index,
         props: element.props,
         type: element.type,
         tag: getTag(element),
@@ -227,6 +265,11 @@ const reconcileChildren = (fiber, children) => {
 
       newFiber.stateNode = createStateNode(newFiber);
     }
+
+    /**
+     *  After process get rid of the alternate from the map.
+     */
+    elementMap.delete(currentIndex);
 
     /**
      *  In the first iteration it is a direct parent - child
@@ -244,19 +287,20 @@ const reconcileChildren = (fiber, children) => {
       previousFiber.sibling = newFiber;
     }
 
-    /**
-     *  As we go sideways with the current tree
-     *  we do the same with the alternate tree.
-     */
-    if (alternate && alternate.sibling) {
-      alternate = alternate.sibling;
-    } else {
-      alternate = null;
-    }
-
     previousFiber = newFiber;
 
     index++;
+  }
+
+  /**
+   *  The map at this point because of the deletions has the Fiber
+   *  that has no corresponding wip representation.
+   *
+   *  That means they need to be deleted.
+   */
+  for (let forDeletetion of elementMap.values()) {
+    forDeletetion.effectTag = DELETION;
+    fiber.effects.push(forDeletetion);
   }
 };
 
@@ -285,7 +329,16 @@ const commitWork = item => {
      *  DOMNode.
      */
     if (item.parent.stateNode !== item.alternate.parent.stateNode) {
-      item.parent.stateNode.appendChild(item.stateNode);
+      let parentFiber = item.parent;
+
+      while (
+        parentFiber.tag === CLASS_COMPONENT ||
+        parentFiber.tag === FUNCTIONAL_COMPONENT
+      ) {
+        parentFiber = parentFiber.parent;
+      }
+
+      parentFiber.stateNode.appendChild(item.stateNode);
     }
   } else if (item.effectTag === DELETION) {
     let fiber = item;
