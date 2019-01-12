@@ -7,7 +7,9 @@ import {
   DELETION,
   CLASS_COMPONENT,
   FUNCTIONAL_COMPONENT,
-  PASSIVE_EFFECT
+  PASSIVE_EFFECT,
+  REPLACE_CREATE,
+  REPLACE_DELETE
 } from "./../Constants";
 import { updateDOMElement } from "./../DOM";
 import {
@@ -172,17 +174,18 @@ const reconcileChildren = (fiber, children) => {
    */
   let hasAlternate;
 
+  /**
+   *  It is a native array or a static.
+   */
+  let isDynamicChildren;
+
   while (index < numberOfElements) {
     element = arrifiedChildren[index];
 
-    let isDynamicChildren = arrifiedChildren.every(i => i.isArray);
-
-    if (arrifiedChildren.every(i => i.isArray && !i.props.key)) {
-      throw new Error("every eleement in an array must have a unqie key");
-    }
+    isDynamicChildren = arrifiedChildren.every(i => i.isArray);
 
     /**
-     *  Populate the map.
+     *  Populate the map. Based on the type of children we use index or keys.
      */
     while (alternate) {
       elementMap.set(
@@ -192,8 +195,6 @@ const reconcileChildren = (fiber, children) => {
 
       alternate = alternate.sibling;
     }
-
-    // let isDynamicChildren = false;
 
     currentIndex = isDynamicChildren ? element.props.key : element.index;
 
@@ -219,9 +220,9 @@ const reconcileChildren = (fiber, children) => {
         tag: getTag(element),
         parent: fiber,
         effects: [],
-        effectTag: "w",
+        effectTag: REPLACE_CREATE,
         updateQueue: [],
-        d: currentAlternate
+        alternateRef: currentAlternate
       };
 
       if (element.props.key) {
@@ -238,7 +239,7 @@ const reconcileChildren = (fiber, children) => {
         };
       }
 
-      currentAlternate.effectTag = "ww";
+      currentAlternate.effectTag = REPLACE_DELETE;
 
       fiber.effects.push(currentAlternate);
       /**
@@ -349,11 +350,15 @@ const commitWork = item => {
     item.stateNode.__fiber = item;
   }
 
-  if (item.effectTag === "w") {
+  /**
+   *  The branch where we update components or create new ones because the identity of
+   *  the elements are different.
+   */
+  if (item.effectTag === REPLACE_CREATE) {
     let fiber = item;
     let parentFiber = item.parent;
 
-    let alternate = item.d;
+    let alternate = item.alternateRef;
     let pal = parentFiber.alternate;
 
     while (
@@ -366,6 +371,7 @@ const commitWork = item => {
     while (pal.tag === CLASS_COMPONENT || pal.tag === FUNCTIONAL_COMPONENT) {
       pal = pal.parent;
     }
+
     while (
       fiber.tag === CLASS_COMPONENT ||
       fiber.tag === FUNCTIONAL_COMPONENT
