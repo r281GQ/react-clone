@@ -8,6 +8,22 @@ const TEXT_ELEMENT = "TEXT_ELEMENT";
 const createTextElement = value =>
   createElement(TEXT_ELEMENT, { nodeValue: value });
 
+/**
+ *  addArrayIndicator :: RawChild -> RawChild
+ *
+ *  Adds isArray prop to the Child if it is a native Array.
+ */
+const addArrayIndicator = child =>
+  Array.isArray(child)
+    ? child.map(element => ({ ...element, isArray: true }))
+    : child;
+
+/**
+ *  createValidElement :: RawChild -> RawChild
+ */
+const createValidElement = c =>
+  c instanceof Object ? c : createTextElement(c);
+
 const createElement = (type, config, ...args) => {
   const props = Object.assign({}, config);
   const hasChildren = args.length > 0;
@@ -20,39 +36,18 @@ const createElement = (type, config, ...args) => {
     return { type, props };
   }
 
-  let f = args.map(
-    child => {
-      // console.log(child);
-
-      if (Array.isArray(child))
-        return child.map(x => ({ ...x, isArray: true }));
-
-      return child;
-    }
-    // Array.isArray(child) ? { ...child, isArray: true } : child
-  );
-
-  const rawChildren = hasChildren ? [].concat(...f) : [];
+  const rawChildren = hasChildren
+    ? [].concat(...args.map(addArrayIndicator))
+    : [];
 
   // const rawChildren = hasChildren ? [].concat(...args) : [];
-  // console.log(rawChildren);
   /**
    *  Filter out falsy elements. Return the child itself if that is a Class/Function component.
    *  Create text element otherwise.
    */
   props.children = rawChildren
     .filter(c => c != null)
-    .map(c => {
-      if (c === false) {
-        return null;
-      }
-
-      const child = c instanceof Object ? c : createTextElement(c);
-
-      // console.log(child);
-
-      return child;
-    });
+    .map(!c ? null : createValidElement(c));
   return { type, props };
 };
 
