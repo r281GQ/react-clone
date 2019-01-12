@@ -193,8 +193,6 @@ const reconcileChildren = (fiber, children) => {
       alternate = alternate.sibling;
     }
 
-    // console.log(fiber);
-
     // let isDynamicChildren = false;
 
     currentIndex = isDynamicChildren ? element.props.key : element.index;
@@ -343,7 +341,6 @@ const reconcileChildren = (fiber, children) => {
  *  Takes on Fiber with an Effect at time and performs DOM mutation.
  */
 const commitWork = item => {
-  console.log(item);
   /**
    *  In reconcileChildren the new Fiber structure gets created every time.
    *  We need to update the reference accordingly.
@@ -385,7 +382,6 @@ const commitWork = item => {
 
     parentFiber.stateNode.replaceChild(fiber.stateNode, alternate.stateNode);
   } else if (item.effectTag === UPDATE) {
-    console.log("sd3333");
     if (item.tag === HOST_COMPONENT || item.tag === HOST_ROOT)
       updateDOMElement(item.stateNode, item.alternate.props, item.props);
 
@@ -396,7 +392,6 @@ const commitWork = item => {
      *  DOMNode.
      */
     if (item.parent.stateNode !== item.alternate.parent.stateNode) {
-      console.log("999");
       let parentFiber = item.parent;
 
       while (
