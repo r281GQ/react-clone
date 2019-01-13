@@ -201,10 +201,43 @@ const root = document.getElementById("root");
 
 // render(<Todo nullify={false} />, root);
 
-const logger = ({ getState, dispatch }) => next => action => {};
-
 const ADD_TODO = "add_todo";
 const INC = "inc";
+const DEC = "dec";
+
+const logger1 = ({ getState, dispatch }) => next => action => {
+  console.log("First logger!");
+  next(action);
+};
+
+const logger2 = ({ getState, dispatch }) => next => action => {
+  console.log("2nd logger!");
+  next(action);
+};
+
+const thunk = ({ getState, dispatch }) => next => action => {
+  if (typeof action === "function") {
+    action(dispatch, getState);
+  } else {
+    next(action);
+  }
+};
+
+const todos = () => {
+  return (dispatch, getState) => {
+    new Promise(resolve =>
+      setTimeout(
+        () =>
+          resolve({
+            completed: false,
+            id: 2,
+            name: "Make coffee!"
+          }),
+        2500
+      )
+    ).then(todo => dispatch({ type: ADD_TODO, payload: todo }));
+  };
+};
 
 const initialState = {
   todos: [],
@@ -224,6 +257,8 @@ const counterReducer = (state, action) => {
   switch (action.type) {
     case INC:
       return state + 1;
+    case DEC:
+      return state - 1;
     default:
       return state;
   }
@@ -234,28 +269,30 @@ const reducer = combineReducers({
   counter: counterReducer
 });
 
-const store = createStore(reducer, initialState, applyMiddleware(logger));
+const store = createStore(reducer, initialState, applyMiddleware([thunk]));
 
 store.subscribe(() => console.log(store.getState()));
 
-store.dispatch({
-  type: ADD_TODO,
-  payload: {
-    completed: false,
-    id: 2,
-    name: "Make coffee!"
-  }
-});
+// store.dispatch({
+//   type: ADD_TODO,
+//   payload: {
+//     completed: false,
+//     id: 2,
+//     name: "Make coffee!"
+//   }
+// });
 
 store.dispatch({
   type: INC
 });
 
-store.dispatch({
-  type: ADD_TODO,
-  payload: {
-    completed: false,
-    id: 1,
-    name: "Where did I go wrong?"
-  }
-});
+// store.dispatch({
+//   type: ADD_TODO,
+//   payload: {
+//     completed: false,
+//     id: 1,
+//     name: "Where did I go wrong?"
+//   }
+// });
+
+store.dispatch(todos());

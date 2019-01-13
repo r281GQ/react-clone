@@ -1,7 +1,11 @@
-export default (reducer, initialState) => {
+const createStore = (reducer, initialState, middleWare) => {
   let currentState;
 
   let subscribers = [];
+
+  if (middleWare) {
+    return middleWare(createStore)(reducer, initialState);
+  }
 
   let calculateState = action => {
     if (action.type === "INIT") {
@@ -27,3 +31,5 @@ export default (reducer, initialState) => {
     }
   };
 };
+
+export default createStore;
